@@ -17,8 +17,9 @@ const test2 = (message:string) => {
 const test3 = (message:string) => {
   const eventHub = new EventHub();
   let called = false;
-  eventHub.on('楚天都市报', () => { called = true; });
-  eventHub.off('楚天都市报', () => { called = true; })
+  const calledEvent = () => { called = true; };
+  eventHub.on('楚天都市报', calledEvent);
+  eventHub.off('楚天都市报', calledEvent)
   eventHub.emit('楚天都市报');
   console.assert(!called, message);
   console.log(message);
