@@ -1,4 +1,4 @@
-import EventHub from './event-hub';
+import EventHub from '.';
 
 const test1 = (message:string) => {
   console.assert(EventHub instanceof Object, message);
