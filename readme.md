@@ -19,5 +19,5 @@ npm install -g typescript
 进入相应的目录后运行测试用例
 ```
 cd event-hub
-ts-node ./event-hub-test.ts
+ts-node ./index.test.ts
 ```
