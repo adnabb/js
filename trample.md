@@ -1,0 +1,1 @@
+1. 不可以用typeof source === 'object'来判断是否为object，因为 typeof null === 'object' => true
