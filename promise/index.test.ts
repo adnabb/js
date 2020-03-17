@@ -74,10 +74,6 @@ describe('Promise', () => {
     promise.then(null, onRejected);
   });
 
-
-  xit('2 Promise States', () => {
-  });
-
   describe('2.2 A promise’s then method accepts two arguments', () => {
     it('2.2.1 Both onFulfilled and onRejected are optional arguments', () => {
       const promise = new Promise(() => {});
@@ -116,7 +112,6 @@ describe('Promise', () => {
           resolve('hi');
         });
         promise.then((value) => {
-          console.log(value)
           assert(value === 'hi');
         });
       });
@@ -222,43 +217,100 @@ describe('Promise', () => {
       //   assert.isUndefined(this);
       // });
 
-      describe('2.2.6 then may be called multiple times on the same promise.', () => {
-        it('2.2.6.1 If/when promise is fulfilled, all respective onFulfilled callbacks must execute in the order of their originating calls to then.', () => {
-          const fn1 = sinon.fake();
-          const fn2 = sinon.fake();
-          const fn3 = sinon.fake();
-          const fn4 = sinon.fake();
-          const promise = new Promise((resolve) => {
-            resolve();
-            setTimeout(() => {
-              assert.isTrue(fn1.calledBefore(fn2));
-              assert.isTrue(fn2.calledBefore(fn3));
-              assert.isTrue(fn3.calledBefore(fn4));
-            });
-          });
-          promise.then(fn1);
-          promise.then(fn2);
-          promise.then(fn3);
-          promise.then(fn4);
-        });
+      // TODO: promise3.then直接相连就会报错
 
-        it('2.2.6.2 If/when promise is rejected, all respective onRejected callbacks must execute in the order of their originating calls to then.', () => {
-          const fn1 = sinon.fake();
-          const fn2 = sinon.fake();
-          const fn3 = sinon.fake();
-          const fn4 = sinon.fake();
-          const promise = new Promise((resolve) => {
-            resolve();
-            setTimeout(() => {
-              assert.isTrue(fn1.calledBefore(fn2));
-              assert.isTrue(fn2.calledBefore(fn3));
-              assert.isTrue(fn3.calledBefore(fn4));
-            });
+    });
+
+    describe('2.2.6 then may be called multiple times on the same promise.', () => {
+      it('2.2.6.1 If/when promise is fulfilled, all respective onFulfilled callbacks must execute in the order of their originating calls to then.', () => {
+        const fn1 = sinon.fake();
+        const fn2 = sinon.fake();
+        const fn3 = sinon.fake();
+        const fn4 = sinon.fake();
+        const promise = new Promise((resolve) => {
+          resolve();
+          setTimeout(() => {
+            assert.isTrue(fn1.calledBefore(fn2));
+            assert.isTrue(fn2.calledBefore(fn3));
+            assert.isTrue(fn3.calledBefore(fn4));
           });
-          promise.then(fn1);
-          promise.then(fn2);
-          promise.then(fn3);
-          promise.then(fn4);
+        });
+        promise.then(fn1);
+        promise.then(fn2);
+        promise.then(fn3);
+        promise.then(fn4);
+      });
+
+      it('2.2.6.2 If/when promise is rejected, all respective onRejected callbacks must execute in the order of their originating calls to then.', () => {
+        const fn1 = sinon.fake();
+        const fn2 = sinon.fake();
+        const fn3 = sinon.fake();
+        const fn4 = sinon.fake();
+        const promise = new Promise((resolve) => {
+          resolve();
+          setTimeout(() => {
+            assert.isTrue(fn1.calledBefore(fn2));
+            assert.isTrue(fn2.calledBefore(fn3));
+            assert.isTrue(fn3.calledBefore(fn4));
+          });
+        });
+        promise.then(fn1);
+        promise.then(fn2);
+        promise.then(fn3);
+        promise.then(fn4);
+      });
+    });
+
+    describe('2.2.7', () => {
+      it ('2.2.7-1 then must return a promise', () => {
+        const promise = new Promise((resolve) => {
+          resolve();
+        });
+        // 注意这里必须是promise.then()，括号不能少，否则then函数没有运行
+        const promise2 = promise.then();
+        assert.isTrue(promise2 instanceof Promise);
+      });
+
+      it('2.2.7.1 If either onFulfilled or onRejected returns a value x, run the Promise Resolution Procedure [[Resolve]](promise2, x)', () => {
+        new Promise((resolve) => {
+          resolve();
+        }).then(() => {
+          return 'x'
+        }).then((value) => {
+          assert(value === 'x');
+        });
+      });
+
+     it('2.2.7.2 If either onFulfilled or onRejected throws an exception e, promise2 must be rejected with e as the reason.', () => {
+        const error = new Error('a cute error');
+        new Promise((resolve) => {
+            resolve();
+          }).then(() => {
+            throw error;
+          }).then(null, (e:unknown) => {
+            assert(this.state === 'rejected');
+            assert(e === error);
+          });
+      });
+
+     it('2.2.7.3 If onFulfilled is not a function and promise1 is fulfilled, promise2 must be fulfilled with the same value as promise1', () => {
+        const promise = new Promise((resolve) => {
+          resolve();
+        });
+        const promise2 = promise.then();
+        setTimeout(() => {
+          assert(promise2.state === 'fulfilled');
+        });
+      });
+
+      it('2.2.7.4 If onRejected is not a function and promise1 is rejected, promise2 must be rejected with the same reason as promise1', () => {
+        const error = new Error('error');
+        const promise = new Promise((resolve, reject) => {
+          reject(error);
+        });
+        const promise2 = promise.then();
+        setTimeout(() => {
+          assert(promise2.state === 'rejected');
         });
       });
     });
