@@ -1,4 +1,4 @@
-class Promise{
+class Promise {
   state = 'pending';
   callback = [];
   returnValue;
@@ -42,8 +42,12 @@ class Promise{
     setTimeout(() => {
       this.callback.forEach((item) => {
         try {
-          this.returnValue = item[0] && item[0].call(undefined, value);
-          this.resolutionProcedure(item[2], this.returnValue);
+          if (!item[0]) {
+            item[2].resolve(value);
+          } else {
+            this.returnValue = item[0] && item[0].call(undefined, value);
+            this.resolutionProcedure(item[2], this.returnValue);
+          }
         } catch (error) {
           item[2].reject(error);
         }
