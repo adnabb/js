@@ -203,28 +203,19 @@ describe('Promise', () => {
     it('2.2.5 onFulfilled and onRejected must be called as functions (i.e. with no this value).', (done) => {
       const promise1 = new Promise((resolve, reject) => {
         resolve();
-      });
-      promise1.then(function() {
+      }).then(function() {
         assert.isUndefined(this);
       });
 
       const promise2 = new Promise((resolve, reject) => {
         reject();
       });
+      // 这里不能为箭头函数，由于箭头函数不支持this（但是这个测试用例用来检测this）
       promise2.then(null, function() {
+        console.log('---------------', this)
         assert.isUndefined(this);
         done();
       });
-
-      // TODO: 为箭头函数则失败
-      // const promise3 = new Promise((resolve, reject) => {
-      //   resolve();
-      // });
-      // promise3.then(() => {
-      //   assert.isUndefined(this);
-      // });
-
-      // TODO: promise3.then直接相连就会报错
 
     });
 
@@ -234,7 +225,7 @@ describe('Promise', () => {
         const fn2 = sinon.fake();
         const fn3 = sinon.fake();
         const fn4 = sinon.fake();
-        const promise = new Promise((resolve) => {
+        new Promise((resolve) => {
           resolve();
           setTimeout(() => {
             assert.isTrue(fn1.calledBefore(fn2));
@@ -242,11 +233,7 @@ describe('Promise', () => {
             assert.isTrue(fn3.calledBefore(fn4));
             done();
           });
-        });
-        promise.then(fn1);
-        promise.then(fn2);
-        promise.then(fn3);
-        promise.then(fn4);
+        }).then(fn1).then(fn2).then(fn3).then(fn4);
       });
 
       it('2.2.6.2 If/when promise is rejected, all respective onRejected callbacks must execute in the order of their originating calls to then.', () => {
