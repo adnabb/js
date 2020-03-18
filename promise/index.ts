@@ -1,3 +1,5 @@
+// import '@types/node';
+
 class Promise {
   state = 'pending';
   callback = [];
@@ -39,7 +41,7 @@ class Promise {
   resolve(value?:unknown) {
     if (this.state !== 'pending') return;
     this.state = 'fulfilled';
-    setTimeout(() => {
+    nextTick(() => {
       this.callback.forEach((item) => {
         try {
           if (!item[0]) {
@@ -57,7 +59,7 @@ class Promise {
   reject(reason?:unknown) {
     if (this.state !== 'pending') return;
     this.state = 'rejected';
-    setTimeout(() => {
+    nextTick(() => {
       this.callback.forEach((item) => {
         try {
           if (!item[1]) {
@@ -87,6 +89,17 @@ class Promise {
     this.callback.push(handle);
     return promise;
   }
+}
+
+function nextTick(fn:Function) {
+  // @ts-ignore
+  if (process && process.nextTick) return process.nextTick(fn);
+  // @ts-ignore
+  const targetNode = document.createElement('div');
+  const config = { attribute: true, childList: false, subtree: false };
+  // @ts-ignore
+  const observer = new MutationObserver(fn);
+  observer.observe(targetNode, config);
 }
 
 export default Promise;
