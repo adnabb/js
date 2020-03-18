@@ -5,49 +5,34 @@ class Promise {
   callback = [];
   returnValue;
   resolutionProcedure(promise, x) {
-    if (promise === x) {
-      this.reject(new TypeError);
-    }
-
-    if (x instanceof Promise) {
-      x.then((result) => {
-        x.resolve(result);
-      }, (reason) => {
-        x.reject(reason);
-      });
-    }
-
+    if (promise === x) { this.resolveWithSelf(); }
+    if (x instanceof Promise) { this.resolveWithPromise(x); }
     if (x instanceof Object) {
-      let then;
-      try {
-        then = x.then;
-      } catch (e) {
-        promise.reject(e);
-      }
-      if (typeof then === 'function') {
-        x.then((y) => {
-          promise.resolutionProcedure(promise, y);
-        }, (r) => {
-          promise.reject(r);
-        });
-      } else {
-        promise.resolve(x);
-      }
-
+      this.resolveWithObject(promise, x);
     } else {
       promise.resolve(x);
     }
-  };
-  resolve(value?:unknown) {
+  }
+  checkAfferentState(state) {
+    if (state !== 'fulfilled' && state !== 'rejected') return false;
+    return true;
+  }
+  resolveOrReject(state, value) {
     if (this.state !== 'pending') return;
-    this.state = 'fulfilled';
+    if (!this.checkAfferentState(state)) return;
+    this.state = state;
     nextTick(() => {
+      const itemIndex = this.state === 'fulfilled' ? 0 : 1;
       this.callback.forEach((item) => {
         try {
-          if (!item[0]) {
+          if (!item[itemIndex] && this.state === 'fulfilled') {
+            // 如果onFulfilled不存在，promise2就以传入的值直接fulfilled
             item[2].resolve(value);
+          } else if (!item[itemIndex] && this.state === 'rejected') {
+            // 如果onRejected不存在，promise2就以传入的值直接rejected
+            item[2].reject(value);
           } else {
-            this.returnValue = item[0] && item[0].call(undefined, value);
+            this.returnValue = item[itemIndex] && item[itemIndex].call(undefined, value);
             this.resolutionProcedure(item[2], this.returnValue);
           }
         } catch (error) {
@@ -55,25 +40,13 @@ class Promise {
         }
       });
     });
-  };
+  }
+  resolve(value?:unknown) {
+    this.resolveOrReject('fulfilled', value);
+  }
   reject(reason?:unknown) {
-    if (this.state !== 'pending') return;
-    this.state = 'rejected';
-    nextTick(() => {
-      this.callback.forEach((item) => {
-        try {
-          if (!item[1]) {
-            item[2].reject(reason);
-          } else {
-            this.returnValue = item[1] && item[1].call(undefined, reason);
-            this.resolutionProcedure(item[2], this.returnValue);
-          }
-        } catch (error) {
-          item[2].reject(error);
-        }
-      });
-    });
-  };
+    this.resolveOrReject('rejected', reason);
+  }
   onFullFilled = null;
   onRejected = null;
   constructor(fn) {
@@ -88,6 +61,36 @@ class Promise {
     handle[2] = promise;
     this.callback.push(handle);
     return promise;
+  }
+  resolveWithSelf() {
+    this.reject(new TypeError);
+  }
+  resolveWithPromise(x) {
+    x.then((result) => {
+      x.resolve(result);
+    }, (reason) => {
+      x.reject(reason);
+    });
+  }
+  resolveWithFunction(promise, x) {
+    x.then((y) => {
+      promise.resolutionProcedure(promise, y);
+    }, (r) => {
+      promise.reject(r);
+    });
+  }
+  resolveWithObject(promise, x) {
+    let then;
+    try {
+      then = x.then;
+    } catch (e) {
+      promise.reject(e);
+    }
+    if (typeof then === 'function') {
+      this.resolveWithFunction(promise, x);
+    } else {
+      promise.resolve(x);
+    }
   }
 }
 
